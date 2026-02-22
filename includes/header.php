@@ -21,10 +21,10 @@ if (session_status() === PHP_SESSION_NONE) {
             <a class="navbar-brand" href="index.php">Roomora</a>
 
             <div class="ms-auto">
-                <?php if (isset($_SESSION['user_name'])): ?>
+                <?php if (isset($_SESSION['id'])): ?>
 
                     <span class="text-white me-3">
-                        Hi, <?php echo $_SESSION['user_name']; ?>
+                        Hi, <?php echo $_SESSION['name']; ?>
                     </span>
 
                     <a href="logout.php" class="btn btn-danger btn-sm">
