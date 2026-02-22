@@ -1,8 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_name'])) {
-    $_SESSION['user_name'] = "Ian Dev";
+if (!isset($_SESSION['id'])) {
     header("Location: login.php");
     exit();
 }
@@ -11,7 +10,7 @@ include("includes/header.php");
 ?>
 
 <div class="container mt-5">
-    <h2>Welcome, <?php echo $_SESSION['user_name']; ?> 👋. Nice to have you back!</h2>
+    <h2>Welcome, <?php echo $_SESSION['name']; ?> 👋. Nice to have you back!</h2>
     <p id="clock" class="text-muted"></p>
 
     <div class="row mt-4">
