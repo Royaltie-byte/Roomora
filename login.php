@@ -1,102 +1,102 @@
 <?php
-session_start();
-require 'db.php';
+include("includes/header.php");
 
-?>
-<?php include("includes/header.php"); ?>
+if (isset($_SESSION['user_id'])) {
+    header("Location: dashboard.php");
+    exit();
+}
 
-<div class="container mt-5" style="max-width: 400px;">
-    <div class="card shadow p-4">
-        <!-- Welcome message -->
-        <h3 class="text-center mb-1">Welcome Back!</h3>
-        <p class="text-center text-muted mb-4">Please login to your account</p>
+if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
+    require_once 'includes/config.php';
 
+    $token = $_COOKIE['remember_token'];
+    $result = $db->query("SELECT u.* FROM users u JOIN remember_tokens rt ON u.id = rt.user_id WHERE rt.token = '$token' AND rt.expires_at > NOW()");
 
+    if ($result->num_rows == 1) {
+        $user = $result->fetch_assoc();
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_name'] = $user['full_name'];
+        header("Location: dashboard.php");
+        exit();
+    }
+}
 
-        <!--the authentication process-->
+$error = '';
 
-<?php
-if($_SERVER['REQUEST_METHOD'] == 'POST'){
-    $email = htmlspecialchars($_POST['email']);
-    $password = htmlspecialchars($_POST['password']);
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+    $remember = isset($_POST['remember']) ? true : false;
 
-    //checking whether the email is in the database.
-    $query = "SELECT *FROM customers WHERE email = '$email' ";
+    require_once 'includes/config.php';
 
-    $result = mysqli_query($db,$query);
-    
-    if(mysqli_num_rows($result)==1){
-        $user = mysqli_fetch_assoc($result);
-        $_SESSION['id'] = $user['id'];
-        $_SESSION['name'] = $user['full_name'];
-        $_SESSION['email'] = $user['email'];
+    $result = $db->query("SELECT * FROM users WHERE email = '$email'");
+    if ($result->num_rows == 1) {
+        $user = $result->fetch_assoc();
+        if (password_verify($password, $user['password'])) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_name'] = $user['full_name'];
 
-        if(password_verify($password,$user['password'])){
+            if ($remember) {
+                $token = bin2hex(random_bytes(32));
+                $expires = date('Y-m-d H:i:s', strtotime('+30 days'));
+
+                $db->query("DELETE FROM remember_tokens WHERE user_id = " . $user['id']);
+
+                $db->query("INSERT INTO remember_tokens (user_id, token, expires_at) VALUES (" . $user['id'] . ", '$token', '$expires')");
+
+                setcookie('remember_token', $token, [
+                    'expires' => time() + (86400 * 30),
+                    'path' => '/',
+                    'domain' => '',
+                    'secure' => false,
+                    'httponly' => true,
+                    'samesite' => 'Lax'
+                ]);
+            }
+
             header("Location: dashboard.php");
             exit();
-        }else{
-            $error = "Incorrect password, please try again.";
+        } else {
+            $error = "Invalid password";
         }
-
-
-    }else{
-        $error = "That email does not exist, sign up if you don't have an account.";
+    } else {
+        $error = "Email not found";
     }
 }
 ?>
 
-        <!--Error Message-->
-        <?php if(isset($error)) : ?>
-            <div class="alert alert-danger">
-                <?php echo $error;?>
-            </div>
+<div class="container mt-5" style="max-width: 500px;">
+    <div class="card shadow p-4">
+        <h3 class="text-center mb-4">Login</h3>
+
+        <?php if ($error): ?>
+            <div class="alert alert-danger"><?php echo $error; ?></div>
         <?php endif; ?>
 
-        <!-- Login form -->
-        <form method="POST" action="login.php">
-            
+        <form method="POST">
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input 
-                    type="email" 
-                    id="email"
-                    name="email"
-                    class="form-control" 
-                    placeholder="you@example.com" 
-                    required
-                >
+                <label>Email</label>
+                <input type="email" name="email" class="form-control" required>
             </div>
 
-            
             <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input 
-                    type="password" 
-                    id="password"
-                    name="password"
-                    class="form-control" 
-                    placeholder="Enter your password" 
-                    required
-                >
+                <label>Password</label>
+                <input type="password" name="password" class="form-control" required>
             </div>
 
-            
+            <div class="mb-3 form-check">
+                <input type="checkbox" name="remember" class="form-check-input" id="rememberCheck">
+                <label class="form-check-label" for="rememberCheck">Remember Me</label>
+            </div>
+
             <button type="submit" class="btn btn-primary w-100">Login</button>
-
-            
-            <div class="text-center mt-3">
-                <a href="forgot-password.php" class="text-decoration-none">Forgot password?</a>
-            </div>
         </form>
 
-        <!-- Sign up link -->
-        <div class="text-center mt-4">
-            <span>Don't have an account? </span>
-            <a href="register.php" class="text-decoration-none">Sign up</a>
-        </div>
+        <p class="text-center mt-3">
+            No account? <a href="register.php">Register here</a>
+        </p>
     </div>
 </div>
-
-
 
 <?php include("includes/footer.php"); ?>
