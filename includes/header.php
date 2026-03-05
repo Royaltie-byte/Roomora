@@ -15,16 +15,15 @@ if (session_status() === PHP_SESSION_NONE) {
 </head>
 
 <body>
-
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="index.php">Roomora</a>
 
             <div class="ms-auto">
-                <?php if (isset($_SESSION['id'])): ?>
+                <?php if (isset($_SESSION['user_name'])): ?>
 
                     <span class="text-white me-3">
-                        Hi, <?php echo $_SESSION['name']; ?>
+                        Hi, <?php echo $_SESSION['user_name']; ?>
                     </span>
 
                     <a href="logout.php" class="btn btn-danger btn-sm">

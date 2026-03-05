@@ -1,4 +1,6 @@
-<?php include("includes/header.php");
+<?php
+session_start();
+include("includes/header.php");
 require_once 'includes/config.php';
 $properties = $db->query("SELECT * FROM properties LIMIT 3");
 ?>
@@ -8,8 +10,13 @@ $properties = $db->query("SELECT * FROM properties LIMIT 3");
     <p class="lead">Book rooms easily and efficiently.</p>
 
     <div class="mt-4">
-        <a href="register.php" class="btn btn-primary btn-lg me-3">Get Started</a>
-        <a href="login.php" class="btn btn-outline-dark btn-lg">Login</a>
+        <?php if (isset($_SESSION['user_id'])): ?>
+            <a href="dashboard.php" class="btn btn-primary btn-lg me-3">Go to Dashboard</a>
+            <a href="logout.php" class="btn btn-outline-dark btn-lg">Logout</a>
+        <?php else: ?>
+            <a href="register.php" class="btn btn-primary btn-lg me-3">Get Started</a>
+            <a href="login.php" class="btn btn-outline-dark btn-lg">Login</a>
+        <?php endif; ?>
     </div>
 </div>
 
