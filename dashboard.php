@@ -1,6 +1,7 @@
 <?php
 session_start();
 
+// security
 if (!isset($_SESSION['id'])) {
     header("Location: login.php");
     exit();
@@ -11,11 +12,10 @@ include("includes/header.php");
 
 $customer_id = $_SESSION['id'];
 
-// Total bookings by this customer
+// stats quetries
 $total_bookings = mysqli_fetch_assoc(mysqli_query($db, "SELECT COUNT(*) AS total FROM bookings WHERE customer_id = $customer_id"))['total'];
 
-// Rooms that have NO ongoing booking right now
-$available_rooms = mysqli_fetch_assoc(mysqli_query($db, "
+$available_rooms_count = mysqli_fetch_assoc(mysqli_query($db, "
     SELECT COUNT(*) AS total FROM rooms 
     WHERE id NOT IN (
         SELECT room_id FROM bookings 
@@ -23,10 +23,9 @@ $available_rooms = mysqli_fetch_assoc(mysqli_query($db, "
     )
 "))['total'];
 
-// Upcoming bookings by this customer
 $upcoming = mysqli_fetch_assoc(mysqli_query($db, "SELECT COUNT(*) AS total FROM bookings WHERE customer_id = $customer_id AND start_time > NOW()"))['total'];
 
-// Image map
+// images
 $room_images = [
     'room A' => '/Roomora/assets/media/image-1.jpg',
     'room B' => '/Roomora/assets/media/image-2.jpg',
@@ -39,84 +38,79 @@ $room_images = [
     'room I' => '/Roomora/assets/media/image-9.jpg',
     'room J' => '/Roomora/assets/media/image-10.jpg',
 ];
+
+// main query
+$rooms_result = mysqli_query($db, "SELECT * FROM rooms");
 ?>
 
-<div class="container mt-5">
-    <h2>Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?> 👋. Nice to have you back!</h2>
-    <p id="clock" class="text-muted"></p>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <h2 class="mb-0 text-uppercase" style="letter-spacing: 2px; color: var(--gold);">Welcome, <?php echo htmlspecialchars($_SESSION['name']); ?></h2>
+            <div id="clock"></div>
+        </div>
+        <a href="my-bookings.php" class="btn btn-outline-primary btn-sm px-4">My Bookings</a>
+    </div>
 
-    <!-- Stats -->
-    <div class="row mt-4">
+    <div class="row mb-5">
         <div class="col-md-4">
-            <div class="card shadow text-center p-3">
-                <h5>Total Bookings</h5>
-                <h3><?php echo $total_bookings; ?></h3>
+            <div class="card p-3 text-center" style="background: var(--bg-card); border: 1px solid var(--border);">
+                <h3 class="mb-0"><?php echo $total_bookings; ?></h3>
+                <small class="text-muted text-uppercase">Total Stays</small>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card shadow text-center p-3">
-                <h5>Available Rooms</h5>
-                <h3><?php echo $available_rooms; ?></h3>
+            <div class="card p-3 text-center" style="background: var(--bg-card); border: 1px solid var(--border);">
+                <h3 class="mb-0"><?php echo $upcoming; ?></h3>
+                <small class="text-muted text-uppercase">Upcoming</small>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card shadow text-center p-3">
-                <h5>Upcoming Reservations</h5>
-                <h3><?php echo $upcoming; ?></h3>
+            <div class="card p-3 text-center" style="background: var(--bg-card); border: 1px solid var(--border);">
+                <h3 class="mb-0"><?php echo $available_rooms_count; ?></h3>
+                <small class="text-muted text-uppercase">Live Availability</small>
             </div>
         </div>
     </div>
 
-    <!-- Flash messages -->
-    <?php if (isset($_GET['success'])): ?>
-        <div class="alert alert-success mt-4">Room booked successfully! 🎉</div>
-    <?php endif; ?>
-    <?php if (isset($_GET['cancelled'])): ?>
-        <div class="alert alert-warning mt-4">Booking cancelled.</div>
-    <?php endif; ?>
-
-    <!-- Rooms -->
-    <div class="d-flex justify-content-between align-items-center mt-5 mb-3">
-        <h4>All Rooms</h4>
-        <a href="my-bookings.php" class="btn btn-outline-primary btn-sm">View My Bookings</a>
-    </div>
-
+    <h4 class="mb-4 text-uppercase" style="letter-spacing: 1px; font-weight: 300;">Available Collections</h4>
+    
     <div class="row">
-        <?php
-        $rooms_result = mysqli_query($db, "SELECT * FROM rooms ORDER BY room_name ASC");
-        while ($room = mysqli_fetch_assoc($rooms_result)):
+        <?php while ($room = mysqli_fetch_assoc($rooms_result)): 
+            // to check if this specific room is occupied right now
+            $room_id = $room['id'];
+            $check_query = "SELECT * FROM bookings WHERE room_id = $room_id AND NOW() BETWEEN start_time AND end_time";
+            $occupied = mysqli_num_rows(mysqli_query($db, $check_query)) > 0;
+            
+            // Gets the image path
             $image = $room_images[$room['room_name']] ?? '/Roomora/assets/media/image-1.jpg';
-
-            // Check if this specific room is currently occupied
-            $rid = $room['id'];
-            $occupied = mysqli_fetch_assoc(mysqli_query($db, "
-                SELECT COUNT(*) AS total FROM bookings 
-                WHERE room_id = $rid AND NOW() BETWEEN start_time AND end_time
-            "))['total'];
         ?>
             <div class="col-md-4 mb-4">
-                <div class="card shadow-sm h-100">
-                    <img
-                        src="<?php echo htmlspecialchars($image); ?>"
-                        class="card-img-top"
-                        alt="<?php echo htmlspecialchars($room['room_name']); ?>"
-                        style="height: 200px; object-fit: cover;"
-                    >
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title"><?php echo htmlspecialchars($room['room_name']); ?></h5>
-                        <p class="text-muted small mb-1">Room #<?php echo $room['id']; ?></p>
+                <a href="room-details.php?room_id=<?php echo $room['id']; ?>" class="text-decoration-none">
+                    <div class="card h-100 room-card" style="background: var(--bg-card); border: 1px solid var(--border); transition: 0.3s;">
+                        <img src="<?php echo htmlspecialchars($image); ?>" 
+                             class="card-img-top" 
+                             alt="Room Image" 
+                             style="height: 250px; object-fit: cover; opacity: 0.8;">
+                        
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-uppercase mb-1" style="color: var(--text); letter-spacing: 1px;">
+                                <?php echo htmlspecialchars($room['room_name']); ?>
+                            </h5>
+                            <p class="text-muted small mb-3">Executive Suite</p>
 
-                        <!-- Availability badge -->
-                        <?php if ($occupied): ?>
-                            <span class="badge bg-danger mb-3">Currently Occupied</span>
-                        <?php else: ?>
-                            <span class="badge bg-success mb-3">Available</span>
-                        <?php endif; ?>
-
-                        <a href="book.php?room_id=<?php echo $room['id']; ?>"
-                           class="btn btn-primary mt-auto">Book This Room</a>
+                            <?php if ($occupied): ?>
+                                <span class="badge rounded-pill" style="background: rgba(220, 53, 69, 0.1); color: #dc3545; border: 1px solid #dc3545;">Occupied</span>
+                            <?php else: ?>
+                                <span class="badge rounded-pill" style="background: rgba(40, 167, 69, 0.1); color: #28a745; border: 1px solid #28a745;">Available</span>
+                            <?php endif; ?>
+                            
+                            <div class="mt-4">
+                                <span class="btn btn-sm btn-outline-primary w-100 py-2">View & Book</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
         <?php endwhile; ?>
     </div>
