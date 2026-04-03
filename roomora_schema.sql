@@ -50,3 +50,5 @@ INSERT INTO rooms (room_name, description, price_per_hour, capacity, amenities) 
 ('room H', 'Modern industrial style suite with premium acoustics for focused meetings.', 90.00, 4, 'Soundproofing, 55" Display, Wi-Fi, AC'),
 ('room I', 'Classic luxury suite with plush furnishings and a private refreshments bar.', 110.00, 2, 'Premium Bedding, Mini Bar, Wi-Fi, AC'),
 ('room J', 'The Penthouse Suite: The ultimate Roomora experience with panoramic views.', 250.00, 4, 'Full Bar, 75" TV, Balcony, Dedicated Wi-Fi');
+ -- to confirm that the queries worked.
+SELECT *FROM rooms;
